@@ -4,30 +4,51 @@ html, body { margin: 0; background: transparent; overflow: hidden; font-family: 
 /* sits just above the jg-hud status bar, flush to the left edge; slim and quiet. Tune bottom to match the status bar. */
 .box { position: fixed; right: 0; bottom: 6vh; width: 20vw; min-width: 300px; display: flex; flex-direction: column; gap: 4px; }
 .box[hidden] { display: none; }
-.bar { display: flex; align-items: center; background: rgba(12, 18, 34, 0.72); border-left: 2px solid var(--cd-acc); border-radius: 0 4px 4px 0; padding: 5px 9px; }
-.tag { font: 700 11px Orbitron, sans-serif; letter-spacing: .12em; color: var(--cd-acc); }
-#in { flex: 1; background: transparent; border: 0; outline: 0; color: var(--cd-ink); font: 500 14px 'Roboto Mono', monospace; }
-#in::placeholder { color: var(--cd-ink2); }
+/* the command box in the DPS bubble look: see-through orange, thin white outline, Roboto, CMD badge */
+.bar { display: flex; align-items: center; gap: 8px; background: rgba(255, 122, 69, 0.42); border: 3px solid #ffffff; border-radius: 16px; padding: 5px 10px; }
+.ctag { font: 700 13.5px Roboto, Arial, sans-serif; letter-spacing: .07em; line-height: 1; color: #14161f; background: #f4f1ea;
+  border: 1.5px solid #14161f; border-radius: 5px; padding: 2px 5px 1px; transform: rotate(-4deg); flex: none; }
+#in { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: #ffffff; caret-color: #ffffff;
+  font: 700 13.5px Roboto, Arial, sans-serif; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+#in::placeholder { color: rgba(255, 255, 255, 0.7); }
 /* the list floats above the line and grows upward: the box itself never changes size or moves */
-.sug { position: absolute; left: 0; right: 0; bottom: calc(100% + 4px); list-style: none; margin: 0; padding: 3px; background: rgba(12, 18, 34, 0.80); border-radius: 0 4px 4px 0; max-height: 220px; overflow: hidden; }
+.sug { position: absolute; left: 0; right: 0; bottom: calc(100% + 5px); list-style: none; margin: 0; padding: 4px; display: flex; flex-direction: column; gap: 1px;
+  background: rgba(255, 122, 69, 0.42); border: 3px solid #ffffff; border-radius: 14px; max-height: 220px; overflow: hidden; }
 .sug:empty { display: none; }
-.sug li { padding: 3px 7px; border-radius: 3px; color: var(--cd-ink); font: 12.5px 'Roboto Mono', monospace; display: flex; gap: 8px; align-items: baseline; }
-.sug li.on { background: var(--cd-sel); }
-.sug li .n { color: var(--cd-acc); }
-.sug li .p { color: var(--cd-ink2); font-size: 12px; }
-.sug li .h { color: var(--cd-ink2); font: 12px Roboto, sans-serif; margin-left: auto; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+.sug li { padding: 3px 8px; border-radius: 9px; border: 1.5px solid transparent; color: #ffffff; display: flex; gap: 7px; align-items: baseline;
+  font: 700 12px Roboto, Arial, sans-serif; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+.sug li.on { border-color: #ffffff; background: rgba(255, 255, 255, 0.12); }
+.sug li .n { color: #ffffff; }
+.sug li .p { opacity: .8; font-size: 11px; }
+.sug li .h { opacity: .78; font-weight: 400; font-size: 11px; margin-left: auto; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%; }
 kbd { font: 11px 'Roboto Mono', monospace; border: 1px solid var(--cd-line); background: var(--cd-bg); border-radius: 4px; padding: 0 4px; color: var(--cd-ink); }
 /* move mode (/chatbox): drag the box anywhere; the spot is kept per player */
-.box.edit { cursor: move; outline: 1px dashed var(--cd-acc); }
+.box.edit { cursor: move; outline: 1.5px dashed #ffffff; outline-offset: 3px; border-radius: 16px; }
 .box.edit #in { pointer-events: none; }
 
-/* /me /do /try lines over a player's head. Each kind has its own edge colour and tag. */
+/* /me /do /try over a player's head: small cartoon bubbles on a see-through orange, thin white outline.
+   /me and /try are speech bubbles with a tail; /do is a square caption box. The tag badge colour tells them apart. */
 .bubbles { position: fixed; inset: 0; pointer-events: none; }
-.bub { position: absolute; transform: translate(-50%, -100%); max-width: 26vw; display: flex; align-items: baseline; gap: 7px;
-  background: rgba(12, 18, 34, 0.86); border: 1px solid var(--cd-line); border-left: 3px solid var(--k); border-radius: 0 6px 6px 0;
-  padding: 4px 9px 5px; color: var(--cd-ink); font: 500 13px Roboto, Arial, sans-serif; line-height: 1.3; white-space: normal; text-align: left; }
-.bub .tag { font: 700 9.5px Orbitron, sans-serif; letter-spacing: .1em; color: var(--k); flex: none; }
+.bub { position: absolute; transform: translate(-50%, calc(-100% - 10px)) rotate(-1.5deg); max-width: 22vw; display: flex; align-items: center; gap: 6px;
+  background: rgba(255, 122, 69, 0.42); color: #ffffff; border: 1.5px solid #ffffff; border-radius: 16px;
+  padding: 4px 10px 5px; font: 700 12.5px Roboto, Arial, sans-serif; line-height: 1.25; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+/* the tail: a turned square clipped to its lower half, so it never doubles the see-through fill */
+.bub::after { content: ""; position: absolute; left: 38%; bottom: -7px; width: 12px; height: 12px; transform: rotate(45deg); clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  background: rgba(255, 122, 69, 0.42); border-right: 1.5px solid #ffffff; border-bottom: 1.5px solid #ffffff; border-bottom-right-radius: 3px; }
+.bub .tag, .bub .res { font: 700 13.5px Roboto, Arial, sans-serif; letter-spacing: .07em; line-height: 1; color: #14161f; background: var(--k); text-shadow: none;
+  border: 1.5px solid #14161f; border-radius: 5px; padding: 2px 5px 1px; flex: none; transform: rotate(-4deg); }
+.bub .res { transform: rotate(3deg); }
 .bub.me { --k: #5bc8e8; } .bub.me .txt { font-style: italic; }
-.bub.do { --k: #ff7a45; }
+.bub.do { --k: #ffd29a; border-radius: 3px; transform: translate(-50%, calc(-100% - 6px)) rotate(1deg); }
+.bub.do::after { display: none; }
 .bub.try.ok { --k: #4ec98a; } .bub.try.no { --k: #ff6b6b; }
-.bub.try .res { font: 700 9.5px Orbitron, sans-serif; letter-spacing: .1em; color: var(--k); flex: none; }
+.bub.npc { --k: #f4f1ea; }
+.bub.info { --k: #5bc8e8; border-radius: 3px; transform: translate(-50%, calc(-100% - 6px)) rotate(1deg); }
+.bub.info::after { display: none; }
+
+/* white ring around the round minimap (GTA draws the map; jg-hud places it from the server layout, which players can't move).
+   Spot = jg-hud default layout "circularMinimap" at 2560x1440: top 38.9, right 18.2, size 261.8 px, as screen fractions. */
+.mapring { position: fixed; top: 2.7vh; right: 0.71vw; width: 18.18vh; height: 18.18vh; border: 3px solid #ffffff; border-radius: 50%; pointer-events: none; box-sizing: border-box; }
+.mapring.edit { outline: 1.5px dashed #ffffff; outline-offset: 6px; cursor: move; pointer-events: auto; }
+.ringhelp { position: fixed; left: 50%; bottom: 10vh; transform: translateX(-50%); background: rgba(255, 122, 69, 0.8); border: 1.5px solid #fff; border-radius: 16px;
+  padding: 6px 14px; color: #fff; font: 700 14px Roboto, Arial, sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,.55); }
