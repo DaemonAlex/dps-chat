@@ -1,0 +1,1 @@
+-- Nothing in shared/logic.lua touches game natives; this file is where stubs would go.
