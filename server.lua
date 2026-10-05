@@ -8,7 +8,7 @@ local function allowed(src, name, gap) return Logic.rateOk(gate, name .. ':' .. 
 
 AddEventHandler('playerDropped', function()
     local src = source
-    for _, k in ipairs({ 'cmds', 'bubble', 'pos', 'edit', 'setpos' }) do gate[k .. ':' .. src] = nil end
+    for _, k in ipairs({ 'cmds', 'bubble', 'pos', 'edit', 'setpos', 'ringget', 'ringedit', 'ringset' }) do gate[k .. ':' .. src] = nil end
     lastLine[src] = nil
 end)
 
@@ -98,4 +98,34 @@ RegisterNetEvent('dps-chat:setPos', function(pos)
     end
     posRead = true
     TriggerClientEvent('dps-chat:pos', -1, cachedPos)
+end)
+
+-- The minimap ring's spot: one for everyone, server KVP, set by admins with /mapring.
+local RING_KEY = 'ring'
+local function readRing()
+    local raw = GetResourceKvpString(RING_KEY)
+    if not raw or raw == '' then return nil end
+    local ok, pos = pcall(json.decode, raw)
+    return ok and Logic.validPos(pos) or nil
+end
+RegisterNetEvent('dps-chat:getRingPos', function()
+    local src = source
+    if not allowed(src, 'ringget', 5000) then return end
+    TriggerClientEvent('dps-chat:ringpos', src, readRing())
+end)
+RegisterNetEvent('dps-chat:ringEditRequest', function()
+    local src = source
+    if not allowed(src, 'ringedit', 2000) or not isAdmin(src) then return end
+    TriggerClientEvent('dps-chat:ringEditAllowed', src)
+end)
+RegisterNetEvent('dps-chat:setRingPos', function(pos)
+    local src = source
+    if not allowed(src, 'ringset', 2000) or not isAdmin(src) then return end
+    if pos == false then DeleteResourceKvp(RING_KEY)
+    else
+        local p = Logic.validPos(pos)
+        if not p then return end
+        SetResourceKvp(RING_KEY, json.encode(p))
+    end
+    TriggerClientEvent('dps-chat:ringpos', -1, readRing())
 end)

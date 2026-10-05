@@ -51,4 +51,16 @@ function Logic.listable(name)
     return type(name) == 'string' and name ~= '' and not name:find('^[%+%-_]') and #name <= 64
 end
 
+---Badge text for a shared bubble: short, upper case, no codes. nil when nothing usable.
+function Logic.cleanTag(s)
+    s = Logic.cleanText(s, 16)
+    return s and s:upper() or nil
+end
+
+---The bubble kinds other scripts may ask for; anything else becomes 'npc'.
+local KINDS = { npc = true, info = true, me = true, ['do'] = true }
+function Logic.bubbleKind(k)
+    return KINDS[k] and k or 'npc'
+end
+
 return Logic

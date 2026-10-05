@@ -59,6 +59,9 @@
     else if (d.action === 'commands') { commands = d.commands || commands; render(); }
     else if (d.action === 'close') closeBox();
     else if (d.action === 'bubbles') drawBubbles(d.list || []);
+    else if (d.action === 'ring') { ringOn = !!d.on; if (!ringEditing) ring.hidden = !ringOn; }
+    else if (d.action === 'ringpos') placeRing(d.pos);
+    else if (d.action === 'ringedit') startRingEdit();
   });
   input.addEventListener('input', () => { sel = -1; render(); });
   input.addEventListener('keydown', (e) => {
@@ -82,7 +85,7 @@
   });
   // bubbles: the client sends every visible line with its screen spot each frame; elements are reused by id
   const layer = document.getElementById('bubbles'), live = new Map();
-  const TAG = { me: 'ME', do: 'DO', try: 'TRY' };
+  const TAG = { me: 'ME', do: 'DO', try: 'TRY', npc: 'NPC', info: 'INFO' };
   function drawBubbles(list) {
     const seen = new Set();
     for (const b of list) {
@@ -92,11 +95,41 @@
         el = document.createElement('div');
         const kind = TAG[b.kind] ? b.kind : 'me';
         el.className = 'bub ' + kind + (kind === 'try' ? (b.ok ? ' ok' : ' no') : '');
-        el.innerHTML = '<span class="tag">' + TAG[kind] + '</span><span class="txt">' + esc(b.text) + '</span>' + (kind === 'try' ? '<span class="res">' + (b.ok ? 'SUCCESS' : 'FAIL') + '</span>' : '');
+        el.innerHTML = '<span class="tag">' + esc(b.tag || TAG[kind]) + '</span><span class="txt">' + esc(b.text) + '</span>' + (kind === 'try' ? '<span class="res">' + (b.ok ? 'SUCCESS' : 'FAIL') + '</span>' : '');
         layer.appendChild(el); live.set(b.id, el);
       }
       el.style.left = (b.x * 100) + '%'; el.style.top = (b.y * 100) + '%'; el.style.opacity = b.a;
     }
     for (const [id, el] of live) if (!seen.has(id)) { el.remove(); live.delete(id); }
   }
+  // the minimap ring: one spot for everyone, set by an admin with /mapring (drag, arrows nudge, Enter saves)
+  const ring = document.getElementById('mapring'), ringHelp = document.getElementById('ringhelp');
+  let ringOn = false, ringEditing = false, ringDrag = null, ringBefore = null;
+  function placeRing(pos) {
+    if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number') { ring.style.left = ring.style.top = ring.style.right = ''; return; }
+    ring.style.right = 'auto'; ring.style.left = pos.x + '%'; ring.style.top = pos.y + '%';
+  }
+  function ringPos() { const r = ring.getBoundingClientRect(); return { x: +(r.left / innerWidth * 100).toFixed(3), y: +(r.top / innerHeight * 100).toFixed(3) }; }
+  function startRingEdit() { ringBefore = ringPos(); ringEditing = true; ring.hidden = false; ring.classList.add('edit'); ringHelp.hidden = false; placeRing(ringBefore); }
+  function endRingEdit(save, reset) {
+    ringEditing = false; ring.classList.remove('edit'); ringHelp.hidden = true; ring.hidden = !ringOn;
+    if (reset) placeRing(null); else if (!save) placeRing(ringBefore);
+    post('ringDone', { save: !!save, reset: !!reset, pos: save ? ringPos() : null });
+  }
+  ring.addEventListener('mousedown', (e) => { if (!ringEditing) return; const r = ring.getBoundingClientRect(); ringDrag = { dx: e.clientX - r.left, dy: e.clientY - r.top }; e.preventDefault(); });
+  window.addEventListener('mousemove', (e) => { if (!ringDrag) return; placeRing({ x: (e.clientX - ringDrag.dx) / innerWidth * 100, y: (e.clientY - ringDrag.dy) / innerHeight * 100 }); });
+  window.addEventListener('mouseup', () => { ringDrag = null; });
+  window.addEventListener('keydown', (e) => {
+    if (!ringEditing) return;
+    const p = ringPos(), sx = 100 / innerWidth, sy = 100 / innerHeight;
+    if (e.key === 'Enter') endRingEdit(true);
+    else if (e.key === 'Escape') endRingEdit(false);
+    else if (e.key === 'r' || e.key === 'R') endRingEdit(false, true);
+    else if (e.key === 'ArrowLeft') placeRing({ x: p.x - sx, y: p.y });
+    else if (e.key === 'ArrowRight') placeRing({ x: p.x + sx, y: p.y });
+    else if (e.key === 'ArrowUp') placeRing({ x: p.x, y: p.y - sy });
+    else if (e.key === 'ArrowDown') placeRing({ x: p.x, y: p.y + sy });
+    else return;
+    e.preventDefault();
+  });
 })();

@@ -133,8 +133,28 @@ TriggerEvent('chat:addSuggestion', '/try', 'Try something: the server rolls succ
 
 local bubbles, drawing = {}, false
 local SHOW_MS, RANGE = 7000, 25.0
-
 local FADE_MS = 600
+local MAX_PER_TARGET, MAX_TOTAL = 3, 40
+
+-- Where a bubble's target is right now: a player (server id), any entity, or a fixed spot.
+-- Peds get the head bone; other entities their top; spots their own height.
+local function anchorOf(b)
+    local ent = 0
+    if b.src then
+        local player = GetPlayerFromServerId(b.src)
+        ent = player ~= -1 and GetPlayerPed(player) or 0
+    elseif b.entity then
+        ent = b.entity
+    elseif b.coords then
+        return b.coords + vector3(0.0, 0.0, b.offset or 0.0)
+    end
+    if ent == 0 or not DoesEntityExist(ent) then return nil end
+    if IsEntityAPed(ent) then
+        return GetPedBoneCoords(ent, 31086, 0.0, 0.0, 0.0) + vector3(0.0, 0.0, 0.35 + (b.offset or 0.0))
+    end
+    local _, mx = GetModelDimensions(GetEntityModel(ent))
+    return GetOffsetFromEntityInWorldCoords(ent, 0.0, 0.0, mx.z + 0.2 + (b.offset or 0.0))
+end
 
 local function drawLoop()
     if drawing then return end
@@ -145,17 +165,16 @@ local function drawLoop()
             local stack, out = {}, {}
             for key, b in pairs(bubbles) do
                 if now > b.untilAt then bubbles[key] = nil else
-                    local player = GetPlayerFromServerId(b.src)
-                    local ped = player ~= -1 and GetPlayerPed(player) or 0
-                    if ped ~= 0 and DoesEntityExist(ped) then
-                        local dist = #(GetEntityCoords(ped) - me)
-                        if dist <= RANGE then
-                            local n = stack[b.src] or 0; stack[b.src] = n + 1
-                            local head = GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.0) + vector3(0.0, 0.0, 0.35 + n * 0.16)
-                            local onScreen, x, y = World3dToScreen2d(head.x, head.y, head.z)
+                    local at = anchorOf(b)
+                    if not at and not b.src then bubbles[key] = nil   -- the NPC or object is gone
+                    elseif at then
+                        local dist = #(at - me)
+                        if dist <= b.range then
+                            local n = stack[b.target] or 0; stack[b.target] = n + 1
+                            local onScreen, x, y = World3dToScreen2d(at.x, at.y, at.z + n * 0.16)
                             if onScreen then
-                                local a = math.min(1.0, (b.untilAt - now) / FADE_MS) * (dist > RANGE - 5.0 and (RANGE - dist) / 5.0 or 1.0)
-                                out[#out + 1] = { id = key, kind = b.kind, text = b.text, ok = b.ok, x = x, y = y, a = math.max(0.0, a) }
+                                local a = math.min(1.0, (b.untilAt - now) / FADE_MS) * (dist > b.range - 5.0 and (b.range - dist) / 5.0 or 1.0)
+                                out[#out + 1] = { id = key, kind = b.kind, tag = b.tag, text = b.text, ok = b.ok, x = x, y = y, a = math.max(0.0, a) }
                             end
                         end
                     end
@@ -170,15 +189,88 @@ local function drawLoop()
 end
 
 local seq = 0
+local function count(target)
+    local n, total = 0, 0
+    for _, b in pairs(bubbles) do total = total + 1; if b.target == target then n = n + 1 end end
+    return n, total
+end
+
+local function add(b)
+    local n, total = count(b.target)
+    if n >= MAX_PER_TARGET or total >= MAX_TOTAL then return nil end
+    seq = seq + 1
+    bubbles[seq] = b
+    drawLoop()
+    return seq
+end
+
 RegisterNetEvent('dps-chat:bubble', function(src, kind, text, ok)
     src = tonumber(src)
     text = Logic.cleanText(text)   -- cleaned again here: never draw text as it arrived
     if not src or not text then return end
-    local mine = 0                 -- at most three lines over one head at a time
-    for _, b in pairs(bubbles) do if b.src == src then mine = mine + 1 end end
-    if mine >= 3 then return end
-    seq = seq + 1
     kind = (kind == 'do' or kind == 'try') and kind or 'me'
-    bubbles[seq] = { src = src, kind = kind, text = text, ok = ok == true, untilAt = GetGameTimer() + SHOW_MS }
-    drawLoop()
+    add({ src = src, target = 'p' .. src, kind = kind, text = text, ok = ok == true, range = RANGE, untilAt = GetGameTimer() + SHOW_MS })
+end)
+
+---Shared bubble maker for any script (client side), in the DPS floating-text look.
+---target: an entity handle (NPC, object, vehicle) or a vector3 spot.
+---opts (all optional): tag = short name on the badge ('MARCUS'), kind = 'npc' (round, cream badge),
+---  'info' (square caption, blue badge), 'me', 'do'; duration ms (default 7000, max 30000);
+---  range m (default 25, max 60); offset = extra height in m.
+---Returns an id for ClearBubble, or nil when the text was empty or limits were hit.
+local function showBubble(target, text, opts)
+    opts = type(opts) == 'table' and opts or {}
+    text = Logic.cleanText(text)
+    if not text then return nil end
+    local b = { kind = Logic.bubbleKind(opts.kind), tag = Logic.cleanTag(opts.tag), text = text,
+        range = math.min(60.0, tonumber(opts.range) or RANGE), offset = tonumber(opts.offset) or 0.0,
+        untilAt = GetGameTimer() + math.min(30000, tonumber(opts.duration) or SHOW_MS) }
+    if type(target) == 'vector3' then
+        b.coords, b.target = target, ('c%.1f:%.1f:%.1f'):format(target.x, target.y, target.z)
+    elseif type(target) == 'number' and target ~= 0 and DoesEntityExist(target) then
+        b.entity, b.target = target, 'e' .. target
+    else
+        return nil
+    end
+    return add(b)
+end
+exports('ShowBubble', showBubble)
+
+---Removes one bubble (id from ShowBubble), or every bubble on an entity when given the entity.
+exports('ClearBubble', function(idOrEntity)
+    if bubbles[idOrEntity] then bubbles[idOrEntity] = nil return end
+    for k, b in pairs(bubbles) do if b.entity == idOrEntity then bubbles[k] = nil end end
+end)
+
+-- White ring around the round minimap: shown while GTA's radar is on screen. Checked four times a second and
+-- only sent to the page when it changes, so it costs nothing while nothing changes.
+CreateThread(function()
+    local shown = nil
+    while true do
+        local on = not IsRadarHidden() and not IsPauseMenuActive() and IsMinimapRendering()
+        if on ~= shown then shown = on; SendNUIMessage({ action = 'ring', on = on }) end
+        Wait(250)
+    end
+end)
+
+-- /mapring (admins): drag the ring onto the minimap; the spot is kept on the server for everyone.
+RegisterNetEvent('dps-chat:ringpos', function(pos) SendNUIMessage({ action = 'ringpos', pos = Logic.validPos(pos) }) end)
+CreateThread(function() TriggerServerEvent('dps-chat:getRingPos') end)
+RegisterCommand('mapring', function()
+    if open then return end
+    TriggerServerEvent('dps-chat:ringEditRequest')
+end, false)
+TriggerEvent('chat:addSuggestion', '/mapring', 'Admins: line the white ring up with the minimap for every player')
+RegisterNetEvent('dps-chat:ringEditAllowed', function()
+    if open then return end
+    open = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = 'ringedit' })
+end)
+RegisterNUICallback('ringDone', function(d, cb)
+    cb({ ok = true })
+    if d.reset then TriggerServerEvent('dps-chat:setRingPos', false)
+    elseif d.save and Logic.validPos(d.pos) then TriggerServerEvent('dps-chat:setRingPos', Logic.validPos(d.pos)) end
+    open = false
+    SetNuiFocus(false, false)
 end)

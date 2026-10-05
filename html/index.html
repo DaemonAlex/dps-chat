@@ -1,14 +1,17 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,700&family=Roboto+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css"></head>
 <body>
 <div id="box" class="box" hidden>
   <ul id="sug" class="sug" role="listbox" aria-label="Commands"></ul>
   <div class="bar">
+    <span class="ctag">CMD</span>
     <input id="in" type="text" autocomplete="off" spellcheck="false" maxlength="256" placeholder="/command" aria-label="Command">
   </div>
 </div>
 <div id="bubbles" class="bubbles" aria-hidden="true"></div>
+<div id="mapring" class="mapring" hidden></div>
+<div id="ringhelp" class="ringhelp" hidden>Drag the ring onto the map. Arrow keys nudge it. Enter saves for everyone, Esc cancels, R resets.</div>
 <script src="app.js"></script>
 </body></html>
