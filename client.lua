@@ -20,21 +20,22 @@ AddEventHandler('chat:addSuggestion', function(name, help, params)
     local n = clean(name); if not n then return end
     suggestions[n] = { help = type(help) == 'string' and help or '', params = type(params) == 'table' and params or {} }
 end)
-RegisterNetEvent('chat:addSuggestion', function(name, help, params) TriggerEvent('chat:addSuggestion', name, help, params) end)
+-- Network-safe only. A handler here would also catch local fires and re-fire itself forever (C stack overflow, 10-04).
+RegisterNetEvent('chat:addSuggestion')
 local function addMany(list)
     if type(list) ~= 'table' then return end
     for _, s in ipairs(list) do if type(s) == 'table' then TriggerEvent('chat:addSuggestion', s.name, s.help, s.params) end end
 end
 AddEventHandler('chat:addSuggestions', addMany)
-RegisterNetEvent('chat:addSuggestions', addMany)
+RegisterNetEvent('chat:addSuggestions')
 local function removeOne(name) local n = clean(name); if n then suggestions[n] = nil end end
 AddEventHandler('chat:removeSuggestion', removeOne)
-RegisterNetEvent('chat:removeSuggestion', removeOne)
+RegisterNetEvent('chat:removeSuggestion')
 
 -- chat messages: voice-only server, dropped on purpose
 for _, ev in ipairs({ 'chat:addMessage', 'chatMessage', 'chat:clear', 'chat:addTemplate', 'chat:addMode', 'chat:removeMode' }) do
     AddEventHandler(ev, function() end)
-    RegisterNetEvent(ev, function() end)
+    RegisterNetEvent(ev)
 end
 
 local commandsAt = -60000   -- when the server's list last arrived; asked again after a minute at most
