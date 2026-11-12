@@ -2,6 +2,13 @@
 
 A commands-only box for voice-only FiveM servers. It replaces the default chat and okokChat, and adds `/me`, `/do` and `/try` as bubbles over the head.
 
+## What it is for
+
+On a voice-only server a text chat feed is clutter. Players still need to type commands, and
+they need to see which commands they can run. This gives them a small box for commands and
+nothing else. `/me`, `/do` and `/try` show over the head of the player who typed them, so nobody
+has to read a log to follow a scene.
+
 ## Features
 
 - Press **T** to open a small box. Type a `/command` and press Enter. There is no chat feed and no text messages.
@@ -65,6 +72,28 @@ All limits are per player and checked on the server.
 | Command list request | 1 per 10 s |
 | Box spot and ring spot read | 1 per 5 s |
 | `/chatbox` and `/mapring` open, save, reset | 1 per 2 s each |
+
+## On its own, and with other scripts
+
+**On its own.** Everything above. It needs no framework and no other resource. The command box,
+the head bubbles, `/chatbox` and `/mapring` all work on a bare FiveM server.
+
+**With any script that registers commands, free or paid.** A script that adds its commands with
+`RegisterCommand` or `chat:addSuggestion` shows up in the box with its parameter names and help
+text. This script only keeps the list. It does not call the other script, so an update to a paid
+script does not break it. Chat messages those scripts send are dropped without an error.
+
+**In place of a paid chat (okokChat).** It takes the `chat` name, so scripts that depend on
+`chat` still start. Run only one chat resource at a time.
+
+**With [dps-ainpcs](https://github.com/DaemonAlex/dps-ainpcs).** NPCs you talk to answer in the
+same bubbles, with their name on the badge, through the `ShowBubble` export. Any script can use
+the export the same way.
+
+**With [dps-filmmode](https://github.com/DaemonAlex/dps-filmmode).** Film mode sends
+`chat:clear`, which this script accepts and ignores. There is no feed, so there is nothing to
+hide. The command box still opens on its own key during film mode, so do not press it while you
+record.
 
 ## Prerequisites
 
@@ -221,3 +250,44 @@ The default spot fits a 16:9 screen with the default minimap layout. Run `/mapri
 
 **Fonts look different.**
 The page loads Orbitron and Roboto from Google Fonts. Without access to it the browser uses fallback fonts.
+
+## Recent changes
+
+- **12 November 2026.** README: what it is for, how it works alone and with paid scripts, other
+  DPS scripts.
+- **25 October 2026.** Synced with the live server.
+- **4 October 2026.** Version 1.1.0. Head bubbles for `/me`, `/do` and `/try`. The `ShowBubble`
+  export for NPC bubbles. The minimap ring. Roboto text with a 3 px outline. First published
+  version.
+
+## Author
+
+Made by [DaemonAlex](https://github.com/DaemonAlex) for DelPerroSands.
+
+## Other DPS scripts
+
+All of these are made for DelPerroSands and run together on one Qbox server. Each one works on
+its own. The ones marked "pairs with" do more when both are running.
+
+| Script | What it does |
+|---|---|
+| [dps-inventory](https://github.com/DaemonAlex/dps-inventory) | The inventory: ox_inventory with equipment slots, backpacks, armour plates and a self status panel, in the DelPerroSands colours. |
+| [dps-medical](https://github.com/DaemonAlex/dps-medical) | Patient records, illness and diagnostic tests. A companion to wasabi_ambulance. Pairs with dps-inventory: symptoms and diagnoses show on the status panel. |
+| [dps-insurance](https://github.com/DaemonAlex/dps-insurance) | Ties m-Insurance into the MDT, impound, hospital and medical chart. Pairs with dps-medical. |
+| [dps-studio](https://github.com/DaemonAlex/dps-studio) | Build rooms, doors and portals in game from one panel (`/studio`), with owners and managers so staff do not have to support them. |
+| [dps-shops](https://github.com/DaemonAlex/dps-shops) | Shop clerks who greet and react to a robbery, then player-owned shops. |
+| [dps-fleet](https://github.com/DaemonAlex/dps-fleet) | Vehicle browser and workshop on one panel: extras, liveries and mods for emergency vehicles. |
+| [dps-parking](https://github.com/DaemonAlex/dps-parking) | Parking with valet, impound, violations and reserved spots. |
+| [dps-vehiclepersistence](https://github.com/DaemonAlex/dps-vehiclepersistence) | Vehicles stay where they were parked. Pairs with dps-parking. |
+| [dps-towjob](https://github.com/DaemonAlex/dps-towjob) | Queue-based tow job with jg-mechanic integration. |
+| [dps-services](https://github.com/DaemonAlex/dps-services) | Request a tow and follow it live on the lb-phone and lb-tablet. Pairs with dps-towjob. |
+| [dps-autoshops](https://github.com/DaemonAlex/dps-autoshops) | Self-service repair shops when no mechanic is on duty. |
+| [dps-cityworker](https://github.com/DaemonAlex/dps-cityworker) | City infrastructure job and career. |
+| [dps-ainpcs](https://github.com/DaemonAlex/dps-ainpcs) | NPCs you can talk to, with trust, quests and intel. |
+| [dps-badpeds](https://github.com/DaemonAlex/dps-badpeds) | Police interaction with NPCs: stops, arrests, intel and jail records. |
+| [dps-gangwars](https://github.com/DaemonAlex/dps-gangwars) | Ambient gang NPCs, territory population and war reinforcements. |
+| [dps-rotations](https://github.com/DaemonAlex/dps-rotations) | Moves dealers, harvests and other spots on a fixed schedule. |
+| [dps-trains](https://github.com/DaemonAlex/dps-trains) | The train system. Pairs with dps-trains-stock, dps-traintools and dps-transitapp. |
+| [dps-transitapp](https://github.com/DaemonAlex/dps-transitapp) | Live train arrival boards on the lb-phone. |
+| [dps-faceplant](https://github.com/DaemonAlex/dps-faceplant) | City help, reports and staff tools on the lb-phone and lb-tablet. |
+| [dps-filmmode](https://github.com/DaemonAlex/dps-filmmode) | One key hides every HUD layer and gives a smooth free camera for recording. |
